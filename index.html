@@ -315,6 +315,11 @@
                 type: 'vegetation',
                 desc: '厂区环绕绿化带，种植银杏、梧桐等树种。',
                 stats: { area: '3000㎡', trees: '150棵', coverage: '35%' }
+            },
+            '配送卡车': {
+                type: 'facilities',
+                desc: '智能无人配送车，用于厂区内货物运输，自动往返于各生产车间与仓储中心。',
+                stats: { load: '3吨', speed: '15km/h', range: '8小时', status: '配送中' }
             }
         };
 
@@ -985,6 +990,7 @@
             createStorageTanks();
             createCoolingTower();
             createCranes();
+            createDeliveryTruck();
         }
 
         function createProductionEquipment() {
@@ -1260,6 +1266,71 @@
             factoryObjects.facilities.push(group);
         }
 
+        function createDeliveryTruck() {
+            const truckGroup = new THREE.Group();
+            
+            const cabGeo = new THREE.BoxGeometry(3, 2.5, 2.5);
+            const cabMat = new THREE.MeshStandardMaterial({ color: 0xff5500, metalness: 0.6, roughness: 0.4 });
+            const cab = new THREE.Mesh(cabGeo, cabMat);
+            cab.position.set(-1.5, 1.25, 0);
+            cab.castShadow = true;
+            truckGroup.add(cab);
+
+            const trailerGeo = new THREE.BoxGeometry(6, 2, 3);
+            const trailerMat = new THREE.MeshStandardMaterial({ color: 0x555566, metalness: 0.5, roughness: 0.5 });
+            const trailer = new THREE.Mesh(trailerGeo, trailerMat);
+            trailer.position.set(3, 1, 0);
+            trailer.castShadow = true;
+            truckGroup.add(trailer);
+
+            const cargoGeo = new THREE.BoxGeometry(4, 2, 2.5);
+            const cargoMat = new THREE.MeshStandardMaterial({ color: 0x88cc88, metalness: 0.3, roughness: 0.6 });
+            const cargo = new THREE.Mesh(cargoGeo, cargoMat);
+            cargo.position.set(3, 3, 0);
+            cargo.castShadow = true;
+            truckGroup.add(cargo);
+
+            const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.3, 12);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.4, roughness: 0.7 });
+            const wheelPositions = [
+                { x: -2.5, z: 1.4 },
+                { x: -2.5, z: -1.4 },
+                { x: 1.5, z: 1.4 },
+                { x: 1.5, z: -1.4 },
+                { x: 5.5, z: 1.4 },
+                { x: 5.5, z: -1.4 }
+            ];
+
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(pos.x, 0.6, pos.z);
+                wheel.castShadow = true;
+                wheel.userData = { type: 'truck-wheel' };
+                truckGroup.add(wheel);
+                animatedObjects.push(wheel);
+            });
+
+            truckGroup.position.set(-100, 0, 0);
+            truckGroup.userData = {
+                type: 'delivery-truck',
+                startX: -100,
+                endX: -55,
+                startZ: 0,
+                endZ: 10,
+                currentPhase: 0,
+                speed: 0.5,
+                waitTime: 0,
+                totalCycle: 15
+            };
+            truckGroup.userData.name = '配送卡车';
+            truckGroup.userData.isClickable = true;
+
+            scene.add(truckGroup);
+            animatedObjects.push(truckGroup);
+            factoryObjects.facilities.push(truckGroup);
+        }
+
         function createCranes() {
             const beamMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, metalness: 0.7, roughness: 0.3 });
 
@@ -1522,6 +1593,36 @@
                         }
                     } else if (obj.userData.type === 'roller') {
                         obj.rotation.x += obj.userData.speed;
+                    } else if (obj.userData.type === 'truck-wheel') {
+                        obj.rotation.z += 0.03;
+                    } else if (obj.userData.type === 'delivery-truck') {
+                        const truck = obj;
+                        const speed = truck.userData.speed;
+                        const deltaX = truck.userData.endX - truck.userData.startX;
+                        const deltaZ = truck.userData.endZ - truck.userData.startZ;
+                        const cycleTime = (time % truck.userData.totalCycle) / truck.userData.totalCycle;
+
+                        if (cycleTime < 0.4) {
+                            const t = cycleTime / 0.4;
+                            truck.position.x = truck.userData.startX + deltaX * t;
+                            truck.position.z = truck.userData.startZ + deltaZ * t * 0.5;
+                            truck.rotation.y = Math.atan2(deltaZ, deltaX) * 0.5 * t;
+                        } else if (cycleTime < 0.7) {
+                            const t = (cycleTime - 0.4) / 0.3;
+                            truck.position.x = truck.userData.endX;
+                            truck.position.z = truck.userData.startZ + deltaZ * 0.5 + deltaZ * 0.5 * t;
+                            truck.rotation.y = Math.PI / 2 * Math.sin(t * Math.PI / 2);
+                        } else if (cycleTime < 0.9) {
+                            const t = (cycleTime - 0.7) / 0.2;
+                            truck.position.x = truck.userData.endX - deltaX * t;
+                            truck.position.z = truck.userData.endZ;
+                            truck.rotation.y = Math.PI / 2 - Math.PI / 2 * t;
+                        } else {
+                            const t = (cycleTime - 0.9) / 0.1;
+                            truck.position.x = truck.userData.startX;
+                            truck.position.z = truck.userData.endZ - deltaZ * t;
+                            truck.rotation.y = -Math.PI / 2 * t;
+                        }
                     }
                 });
             }
