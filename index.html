@@ -420,9 +420,6 @@
         }
 
         function createMainBuilding() {
-            const group = new THREE.Group();
-            group.position.set(0, 0, 0);
-
             const loader = new GLTFLoader();
             const dracoLoader = new DRACOLoader();
             dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
@@ -436,20 +433,25 @@
                     console.log('模型加载完成:', gltf);
                     
                     const model = gltf.scene;
+                    const userData = { name: '主厂房', isClickable: true };
                     
                     model.traverse(function (child) {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.userData = userData;
                             console.log('找到网格:', child.name);
                         }
                     });
                     
+                    model.userData = userData;
                     model.scale.set(70, 70, 70);
                     model.position.y = 0;
                     model.position.x = 3;
                     model.position.z = -10;
-                    group.add(model);
+                    
+                    scene.add(model);
+                    factoryObjects.buildings.push(model);
                     
                     updateObjectCount();
                     console.log('✅ 主厂房模型加载成功并添加到场景');
@@ -463,10 +465,73 @@
                 function (error) {
                     console.error('❌ 模型加载失败:', error);
                     console.error('请确保: 1. main.glb 文件在同一目录 2. 使用本地服务器打开');
+                    console.log('🎨 创建备用主厂房...');
+                    createFallbackMainBuilding();
                 }
             );
+        }
 
-            group.userData = { name: '主厂房', isClickable: true };
+        function createFallbackMainBuilding() {
+            const group = new THREE.Group();
+            group.position.set(0, 0, 0);
+
+            // 主厂房主体
+            const buildingGeo = new THREE.BoxGeometry(25, 12, 20);
+            const buildingMat = new THREE.MeshStandardMaterial({
+                color: 0x788c99,
+                roughness: 0.7,
+                metalness: 0.2
+            });
+            const building = new THREE.Mesh(buildingGeo, buildingMat);
+            building.position.y = 6;
+            building.castShadow = true;
+            building.receiveShadow = true;
+            group.add(building);
+
+            // 屋顶
+            const roofGeo = new THREE.BoxGeometry(27, 1, 22);
+            const roofMat = new THREE.MeshStandardMaterial({
+                color: 0x445566,
+                roughness: 0.8
+            });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 12.5;
+            roof.castShadow = true;
+            group.add(roof);
+
+            // 窗户
+            const windowGeo = new THREE.BoxGeometry(2, 2, 0.2);
+            const windowMat = new THREE.MeshStandardMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.7,
+                emissive: 0x4466aa,
+                emissiveIntensity: 0.2
+            });
+
+            for (let i = 0; i < 3; i++) {
+                const win = new THREE.Mesh(windowGeo, windowMat);
+                win.position.set(-7 + i * 7, 6, 10.1);
+                group.add(win);
+            }
+
+            // 大门
+            const doorGeo = new THREE.BoxGeometry(5, 7, 0.3);
+            const doorMat = new THREE.MeshStandardMaterial({
+                color: 0x556677,
+                roughness: 0.6,
+                metalness: 0.4
+            });
+            const door = new THREE.Mesh(doorGeo, doorMat);
+            door.position.set(0, 3.5, 10.15);
+            group.add(door);
+
+            // 给所有子对象添加 userData
+            const userData = { name: '主厂房', isClickable: true };
+            group.traverse((child) => {
+                child.userData = userData;
+            });
+
             scene.add(group);
             factoryObjects.buildings.push(group);
         }
@@ -485,13 +550,15 @@
                     const model = gltf.scene;
                     model.scale.set(40, 40, 40);
                     model.position.set(-60, 0, 5);
+                    const userData = { name: '仓储中心', isClickable: true };
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.userData = userData;
                         }
                     });
-                    model.userData = { name: '仓储中心', isClickable: true };
+                    model.userData = userData;
                     scene.add(model);
                     factoryObjects.buildings.push(model);
                     console.log('✅ 仓储中心 cangku.glb 加载成功！');
@@ -652,15 +719,17 @@
                 'bangong.glb',
                 (gltf) => {
                     const model = gltf.scene;
-                    model.scale.set(20, 20, 20);
+                    model.scale.set(30, 30, 30);
                     model.position.set(50, 0, -30);
+                    const userData = { name: '办公研发楼', isClickable: true };
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.userData = userData;
                         }
                     });
-                    model.userData = { name: '办公研发楼', isClickable: true };
+                    model.userData = userData;
                     scene.add(model);
                     factoryObjects.buildings.push(model);
                     console.log('✅ 办公研发楼 bangong.glb 加载成功！');
@@ -729,13 +798,15 @@
                     model.scale.set(70, 70, 70);
                     model.position.set(82, 0, 30);
                     model.rotation.y = Math.PI / -2;
+                    const userData = { name: '二号厂房', isClickable: true };
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.userData = userData;
                         }
                     });
-                    model.userData = { name: '二号厂房', isClickable: true };
+                    model.userData = userData;
                     scene.add(model);
                     factoryObjects.buildings.push(model);
                     console.log('✅ main2.glb 加载成功！');
@@ -957,6 +1028,45 @@
         }
 
         function createStorageTanks() {
+            const loader = new GLTFLoader();
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(dracoLoader);
+            
+            console.log('🏺 正在加载罐装区: guanz.glb...');
+
+            loader.load(
+                'guanz.glb',
+                (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(40, 40, 40);
+                    model.position.set(-30, 0, -40);
+                    const userData = { name: '储罐组', isClickable: true };
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            child.userData = userData;
+                        }
+                    });
+                    model.userData = userData;
+                    scene.add(model);
+                    factoryObjects.facilities.push(model);
+                    console.log('✅ 罐装区 guanz.glb 加载成功！');
+                },
+                (progress) => {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                    console.log(`🏺 罐装区加载中: ${percent}%`);
+                },
+                (error) => {
+                    console.error('❌ guanz.glb 加载失败:', error);
+                    console.log('🎨 创建备用罐装区...');
+                    createFallbackStorageTanks();
+                }
+            );
+        }
+
+        function createFallbackStorageTanks() {
             const group = new THREE.Group();
             group.position.set(-35, 0, -40);
 
@@ -990,7 +1100,11 @@
                 group.add(tank);
             }
 
-            group.userData = { name: '储罐组', isClickable: true };
+            const userData = { name: '储罐组', isClickable: true };
+            group.traverse((child) => {
+                child.userData = userData;
+            });
+
             scene.add(group);
             factoryObjects.facilities.push(group);
         }
@@ -1007,15 +1121,17 @@
                 'lqta.glb',
                 (gltf) => {
                     const model = gltf.scene;
-                    model.scale.set(15, 15, 15);
+                    model.scale.set(25, 25, 25);
                     model.position.set(40, 0, 10);
+                    const userData = { name: '冷却塔', isClickable: true };
                     model.traverse((child) => {
                         if (child.isMesh) {
                             child.castShadow = true;
                             child.receiveShadow = true;
+                            child.userData = userData;
                         }
                     });
-                    model.userData = { name: '冷却塔', isClickable: true };
+                    model.userData = userData;
                     scene.add(model);
                     factoryObjects.facilities.push(model);
                     console.log('✅ 冷却塔 lqta.glb 加载成功！');
