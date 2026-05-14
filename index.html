@@ -641,6 +641,43 @@
         }
 
         function createOffice() {
+            const loader = new GLTFLoader();
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(dracoLoader);
+            
+            console.log('🏢 正在加载办公研发楼: bangong.glb...');
+
+            loader.load(
+                'bangong.glb',
+                (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(20, 20, 20);
+                    model.position.set(50, 0, -30);
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    model.userData = { name: '办公研发楼', isClickable: true };
+                    scene.add(model);
+                    factoryObjects.buildings.push(model);
+                    console.log('✅ 办公研发楼 bangong.glb 加载成功！');
+                },
+                (progress) => {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                    console.log(`🏢 办公研发楼加载中: ${percent}%`);
+                },
+                (error) => {
+                    console.error('❌ bangong.glb 加载失败:', error);
+                    console.log('🎨 创建备用办公研发楼...');
+                    createFallbackOffice();
+                }
+            );
+        }
+
+        function createFallbackOffice() {
             const group = new THREE.Group();
             group.position.set(50, 0, -30);
 
@@ -959,6 +996,85 @@
         }
 
         function createCoolingTower() {
+            const loader = new GLTFLoader();
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+            loader.setDRACOLoader(dracoLoader);
+            
+            console.log('❄️ 正在加载冷却塔: lqta.glb...');
+
+            loader.load(
+                'lqta.glb',
+                (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(15, 15, 15);
+                    model.position.set(40, 0, 10);
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    model.userData = { name: '冷却塔', isClickable: true };
+                    scene.add(model);
+                    factoryObjects.facilities.push(model);
+                    console.log('✅ 冷却塔 lqta.glb 加载成功！');
+                    
+                    // 添加风扇和蒸汽粒子动画
+                    const fanGroup = new THREE.Group();
+                    const fanMaterial = new THREE.MeshStandardMaterial({ color: 0x88aacc, metalness: 0.5, roughness: 0.4 });
+                    for (let i = 0; i < 6; i++) {
+                        const blade = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.3, 4, 1.5),
+                            fanMaterial
+                        );
+                        blade.rotation.y = (i / 6) * Math.PI * 2;
+                        blade.position.z = 2.5;
+                        blade.position.y = 15.5;
+                        fanGroup.add(blade);
+                    }
+                    fanGroup.position.copy(model.position);
+                    scene.add(fanGroup);
+                    fanGroup.userData = { type: 'cooling-fan', speed: 0.05 };
+                    animatedObjects.push(fanGroup);
+
+                    for (let i = 0; i < 15; i++) {
+                        const particle = new THREE.Mesh(
+                            new THREE.SphereGeometry(0.2 + Math.random() * 0.3, 8, 8),
+                            new THREE.MeshStandardMaterial({
+                                color: 0xaaccff,
+                                transparent: true,
+                                opacity: 0.6
+                            })
+                        );
+                        particle.position.set(
+                            40 + (Math.random() - 0.5) * 3,
+                            15 + Math.random() * 5,
+                            10 + (Math.random() - 0.5) * 3
+                        );
+                        particle.userData = { 
+                            type: 'steam', 
+                            originalY: 15,
+                            speed: 0.02 + Math.random() * 0.02,
+                            offset: Math.random() * Math.PI * 2
+                        };
+                        scene.add(particle);
+                        animatedObjects.push(particle);
+                    }
+                },
+                (progress) => {
+                    const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                    console.log(`❄️ 冷却塔加载中: ${percent}%`);
+                },
+                (error) => {
+                    console.error('❌ lqta.glb 加载失败:', error);
+                    console.log('🎨 创建备用冷却塔...');
+                    createFallbackCoolingTower();
+                }
+            );
+        }
+
+        function createFallbackCoolingTower() {
             const group = new THREE.Group();
             group.position.set(40, 0, 10);
 
@@ -999,7 +1115,6 @@
             fanGroup.userData = { type: 'cooling-fan', speed: 0.05 };
             animatedObjects.push(fanGroup);
 
-            const steamParticles = [];
             for (let i = 0; i < 15; i++) {
                 const particle = new THREE.Mesh(
                     new THREE.SphereGeometry(0.2 + Math.random() * 0.3, 8, 8),
@@ -1016,7 +1131,7 @@
                 );
                 particle.userData = { 
                     type: 'steam', 
-                    originalY: particle.position.y,
+                    originalY: 15,
                     speed: 0.02 + Math.random() * 0.02,
                     offset: Math.random() * Math.PI * 2
                 };
